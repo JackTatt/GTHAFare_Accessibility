@@ -29,7 +29,6 @@ path = str(Path(os.getcwd()).parent)
 
 
 CONFIG_FILE_NAME='config.cfg' #example
-REGIONS_DEFAULT = ['Boston', 'New York', 'Philadelphia', 'District of Columbia', 'Chicago','Los Angeles','San Francisco-Oakland'] #example
 OTP_CONFIG_FILE = 'otp_config.ini'
 
 class FileConfig():
