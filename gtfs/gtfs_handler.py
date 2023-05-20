@@ -4,6 +4,9 @@
 Created on Mon Jun  8 16:53:41 2020
 
 @author: Rick
+
+Updated 2023/05/19 for GT
+By: Jack Tattersall
 """
 
 import requests
@@ -44,8 +47,10 @@ class InvalidFeed(Exception):
      pass
 
 class get:
+    
+    # May not be required given manual pulls of requisite GTFS files.
 
-    def transit_land(region, input_date, xmin, xmax, ymin, ymax):
+    def transit_land(input_date, xmin, xmax, ymin, ymax):
         
         banned = pd.read_csv(config['General']['gen'] + '/banned_agencies.csv')
         

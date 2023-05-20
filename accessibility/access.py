@@ -17,15 +17,12 @@ import time
 # note - check Ids for SF and LA, since they have leading 0s
 
 
-def get_nexp_beta(in_param, in_region):
+def get_nexp_beta(in_param):
     '''
     function for generating the value for beta for a negative exponential decay function based on median travel time
     '''
 
-
-    acc_config_region = pd.read_csv('accessibility/acc_config_regional.csv')
-
-    acc_config_region = acc_config_region[acc_config_region["region"] == in_region]
+    config = pd.read_csv('accessibility/config.csv')
 
     median_time = float(acc_config_region[in_param])
 
@@ -33,8 +30,7 @@ def get_nexp_beta(in_param, in_region):
 
 
 
-
-def levelofservice(region, gtfs_date):
+def levelofservice(gtfs_date):
 
     '''
     Computes weekly transit level of service for block groups
@@ -49,16 +45,16 @@ def levelofservice(region, gtfs_date):
     distance = 200
 
     # input paths
-    block_group_poly = "data/" + region + "/input/boundary_data/block_group_poly.geojson"
+    block_group_poly = "data/input/boundary_data/block_group_poly.geojson"
 
     # static GTFS folder
-    gtfs_folder = "data/" + region + "/input/gtfs/gtfs_static/feeds_" + gtfs_date
+    gtfs_folder = "data/input/gtfs/gtfs_static/feeds_" + gtfs_date
 
     # file for dates when OTP was run
-    otp_run_path = "data/" + region + "/otp/itinerary/otp_run_dates.csv"
+    otp_run_path = "data/otp/itinerary/otp_run_dates.csv"
 
     # output_file_path
-    output_file_path = "data/" + region + "/output/" + "measures_" + gtfs_date + "_" + "LOS" + ".csv"
+    output_file_path = "data//output/" + "measures_" + gtfs_date + "_" + "LOS" + ".csv"
 
     # output measure name
     output_measure_name = "los_trips"
@@ -286,10 +282,9 @@ def transit_accessibility(region, date, period):
 
 
     # get fare threshold, and the date for fares
-    acc_config_region = pd.read_csv('accessibility/acc_config_regional.csv')
-    acc_config_region = acc_config_region[acc_config_region["region"] == region]
-    fare_threshold = float(acc_config_region["fare_threshold"])
-    fare_date = acc_config_region["fare_date"].iloc[0]
+    acc_config = pd.read_csv('accessibility/acc_config_regional.csv')
+    fare_threshold = float(config["fare_threshold"])
+    fare_date = config["fare_date"].iloc[0]
 
     # getting a neighbourds matrix
     from tracc.spatial import get_neighbours
@@ -314,7 +309,7 @@ def transit_accessibility(region, date, period):
     dfo = dfo.fillna(0)
 
     # load in supply data
-    dftemp = pd.read_csv("data/" + region + "/input/destination_data/employment.csv", dtype=str)
+    dftemp = pd.read_csv("data/input/destination_data/employment.csv", dtype=str)
 
 
     # loading in the accessibility config file
@@ -396,7 +391,7 @@ def transit_accessibility(region, date, period):
 
     # loop over the (8 or 2) travel time matrices in the study period (e.g. in AM, PM, WE)
     j = 0
-    directory = "data/" + region + "/otp/itinerary/travel_times/" + date + "/period" + period_times + "/"
+    directory = "data/otp/itinerary/travel_times/" + date + "/period" + period_times + "/"
     for filename in os.listdir(directory):
         if filename.endswith(".csv"):
 
@@ -412,12 +407,6 @@ def transit_accessibility(region, date, period):
 
             # read in the travel time matrix
             dftall = pd.read_csv(travel_time_matrix, dtype=str)
-
-            if region == "Los Angeles" or region == "San Francisco-Oakland":
-
-                dftall["o_block"] = "0" + dftall["o_block"]
-
-                dftall["d_block"] = "0" + dftall["d_block"]
 
             print("n times:", dftall.shape[0])
 
@@ -450,8 +439,6 @@ def transit_accessibility(region, date, period):
 
                 # merge in fares
                 dft = dft.merge(dff, how='left', on=['o_block','d_block'])
-
-
 
 
 
@@ -943,7 +930,7 @@ def transit_accessibility(region, date, period):
 
 
 
-def auto_accessibility(region, input_matrix):
+def auto_accessibility(input_matrix):
 
     # function for computing auto accessibility
     # set up to run via compute_auto_accessibility.py
@@ -951,7 +938,6 @@ def auto_accessibility(region, input_matrix):
     # make sure the data directory is as follows
     #
     # data
-    # --region
     # ----input
     # ------boundary_data
     # --------block_group_poly.geojson
@@ -977,7 +963,7 @@ def auto_accessibility(region, input_matrix):
 
 
     # get complete list of block groups
-    dfo = pd.read_csv("data/" + region + "/input/boundary_data/" + "block_group_pts.csv", dtype=str)
+    dfo = pd.read_csv("data/input/boundary_data/" + "block_group_pts.csv", dtype=str)
     dfo = dfo[["GEOID"]]
 
 
@@ -1014,7 +1000,7 @@ def auto_accessibility(region, input_matrix):
     # generating intrazonal times based on radius and a 30km/hr travel speed
     from tracc.spatial import radius
     speed_value = 1 / 0.5 # 30 km / hour
-    dfint = radius("data/" + region + "/input/boundary_data/" + "block_group_poly.geojson","GEOID")
+    dfint = radius("data//input/boundary_data/" + "block_group_poly.geojson","GEOID")
     dfint['OriginName'] = dfint["GEOID"].astype(int)
     dfint['DestinationName'] = dfint["GEOID"].astype(int)
     del dfint["GEOID"]
@@ -1026,7 +1012,7 @@ def auto_accessibility(region, input_matrix):
     # getting a neighbourds matrix
     from tracc.spatial import get_neighbours
     neighbours = get_neighbours(
-        spatial_data_file_path = "data/" + region + "/input/boundary_data/" + "block_group_poly.geojson",
+        spatial_data_file_path = "data/input/boundary_data/" + "block_group_poly.geojson",
         weight_type = "KNN",
         idVariable = "GEOID",
         param = 10
@@ -1066,44 +1052,10 @@ def auto_accessibility(region, input_matrix):
         dfo.data[dest] = dfo.data[dest].astype(int)
 
     # load in the full matrix
-    dftall = pd.read_csv("data/" + region + "/input/auto_travel_times/" + input_matrix + ".csv.gzip", compression = "gzip", dtype=str)
+    dftall = pd.read_csv("data/input/auto_travel_times/" + input_matrix + ".csv.gzip", compression = "gzip", dtype=str)
 
     dftall["Total_Time"] = dftall["Total_Time"].astype(float)
     dftall["Total_Time"] = dftall["Total_Time"].astype(int)
-
-
-
-    # adding in extra data for LA
-    if region == "Los Angeles":
-
-        dftextra1 = pd.read_csv("data/" + region + "/input/auto_travel_times/" + input_matrix + "_30toN.csv", dtype=str)
-
-        dftextra2 = pd.read_csv("data/" + region + "/input/auto_travel_times/" + input_matrix + "_Nto30.csv", dtype=str)
-
-        dftextra = pd.concat([dftextra1,dftextra2])
-
-        del dftextra1, dftextra2
-
-        # correcting columns
-        dftextra["Total_Time"] = dftextra["Total_TravelTime"].astype(float)
-        dftextra["Total_Time"] = dftextra["Total_Time"].astype(int)
-        dftextra["OriginName"] = dftextra['Name'].str[:11]
-        dftextra["DestinationName"] = dftextra['Name'].str[-11:]
-
-        dftextra = dftextra.loc[:,["Total_Time","OriginName","DestinationName"]]
-
-        dftall = pd.concat([dftall,dftextra])
-
-        del dftextra
-
-
-
-
-
-    if region == "Los Angeles" or region == "San Francisco-Oakland":
-
-        dftall["OriginName"] = "0" + dftall["OriginName"]
-
 
 
     # # print total zones from spatial file
@@ -1335,7 +1287,7 @@ def auto_accessibility(region, input_matrix):
 
 
         # saving to file
-        outdf.to_csv("data/" + region + "/input/auto_travel_times/accessibility_chunks_" + input_matrix + "/auto_accessibility_" + input_matrix + "_chunk" + str(i) + ".csv", index = False)
+        outdf.to_csv("data/input/auto_travel_times/accessibility_chunks_" + input_matrix + "/auto_accessibility_" + input_matrix + "_chunk" + str(i) + ".csv", index = False)
 
         # again, deleting for memeory
         del outdf
@@ -1343,14 +1295,9 @@ def auto_accessibility(region, input_matrix):
         i += 1
 
 
-def auto_accessibility_matrix_test(region,input_matrix):
+def auto_accessibility_matrix_test(input_matrix):
 
-    dftall = pd.read_csv("data/" + region + "/input/auto_travel_times/" + input_matrix + ".csv.gzip", compression = "gzip", dtype=str)
-
-    if region == "Los Angeles" or region == "San Francisco-Oakland":
-
-        dftall["OriginName"] = "0" + dftall["OriginName"]
-
+    dftall = pd.read_csv("data/input/auto_travel_times/" + input_matrix + ".csv.gzip", compression = "gzip", dtype=str)
 
     test = dftall['OriginName'].value_counts().to_frame()
 
@@ -1359,7 +1306,7 @@ def auto_accessibility_matrix_test(region,input_matrix):
     test.to_csv("test2.csv")
 
 
-def auto_accessibility_join_single(region, period):
+def auto_accessibility_join_single(period):
 
     """
     takes chunks of auto accessibility results and combines them into a single files
@@ -1368,7 +1315,7 @@ def auto_accessibility_join_single(region, period):
     """
 
 
-    data_dir = "data/" + region + "/input/auto_travel_times/accessibility_chunks_" + period
+    data_dir = "data/input/auto_travel_times/accessibility_chunks_" + period
 
     dfs = []
     for filename in os.listdir(data_dir):
@@ -1379,17 +1326,17 @@ def auto_accessibility_join_single(region, period):
 
     print(dfs)
 
-    dfs.to_csv("data/" + region + "/input/auto_travel_times/test.csv")
+    dfs.to_csv("data/input/auto_travel_times/test.csv")
 
 
-def auto_accessibility_join(region):
+def auto_accessibility_join():
 
     """
     takes chunks of auto accessibility results and combines them into a single files
     """
 
 
-    data_dir = "data/" + region + "/input/auto_travel_times/accessibility_chunks_AM"
+    data_dir = "data/input/auto_travel_times/accessibility_chunks_AM"
 
     dfs = []
     for filename in os.listdir(data_dir):
@@ -1400,7 +1347,7 @@ def auto_accessibility_join(region):
 
     dfo = dfs
 
-    data_dir = "data/" + region + "/input/auto_travel_times/accessibility_chunks_PM"
+    data_dir = "data/input/auto_travel_times/accessibility_chunks_PM"
 
     dfs = []
     for filename in os.listdir(data_dir):
@@ -1412,7 +1359,7 @@ def auto_accessibility_join(region):
 
     dfo = dfo.merge(dfs,how="outer",on="GEOID")
 
-    data_dir = "data/" + region + "/input/auto_travel_times/accessibility_chunks_WE"
+    data_dir = "data/input/auto_travel_times/accessibility_chunks_WE"
 
     dfs = []
     for filename in os.listdir(data_dir):
@@ -1424,4 +1371,4 @@ def auto_accessibility_join(region):
     dfo = dfo.merge(dfs,how="outer",on="GEOID")
 
 
-    dfo.to_csv("data/" + region + "/input/auto_travel_times/" + "auto_accessibility.csv", index = False)
+    dfo.to_csv("data/input/auto_travel_times/" + "auto_accessibility.csv", index = False)

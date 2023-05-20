@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sat Jun 13 00:41:46 2020
+Updated on 2023/05/19 
 
-This class contains all the configurations necessary to run the dashboard for 
-one region.
+This class contains all the configurations necessary for GTHA.
 Each field represents the path to the file.
 
 Python Standards:
@@ -13,7 +13,7 @@ PEP 256 -- Docstring Processing System Framework
 PEP 257 -- Docstring Conventions
 PEP 258 -- Docutils Design Specification
 
-@author: Diego Silva
+@author: Jack Tattersall, Diego Silva
 @institution: University of Toronto
 """
 
@@ -106,34 +106,31 @@ class FileConfig():
         config['General']['otp'] = path + '/otp'
 
         # Paths
-        for REGION in region_list:
-            # Boston region config
-            config[REGION] = {}   
             # Boundary data
-            config[REGION]['block_group_polygons'] = path + '/data/' + REGION + '/input/boundary_data/block_group_poly.geojson'
-            config[REGION]['block_group_points'] = path + '/data/' + REGION + '/input/boundary_data/block_group_pts.csv'
-            config[REGION]['tract_polygons'] = path + '/data/' + REGION + '/input/boundary_data/tract_poly.geojson'
-            config[REGION]['tract_points'] = path + '/data/' + REGION + '/input/boundary_data/tract_pts.csv'
-            config[REGION]['county_boundaries'] = path + '/data/' + REGION + '/input/boundary_data/country_boundaries.geojson'
-            config[REGION]['region_boundary'] = path + '/data/' + REGION + '/input/boundary_data/region_boundary.geojson'   
+        config['block_group_polygons'] = path + '/data/input/boundary_data/block_group_poly.geojson'
+        config['block_group_points'] = path + '/data/input/boundary_data/block_group_pts.csv'
+        config['tract_polygons'] = path + '/data/input/boundary_data/tract_poly.geojson'
+        config['tract_points'] = path + '/data/input/boundary_data/tract_pts.csv'
+        config['county_boundaries'] = path + '/data/input/boundary_data/country_boundaries.geojson'
+        config['region_boundary'] = path + '/data/input/boundary_data/region_boundary.geojson'   
             # Open Street Map
-            config[REGION]['osm'] = path + '/data/' + REGION + '/input/osm_data/'   
+        config['osm'] = path + '/data/input/osm_data/'   
             # Population data
-            config[REGION]['population_data'] = path + '/data/' + REGION + '/input/population_data/'   
+        config['population_data'] = path + '/data/input/population_data/'   
             # Destination data
-            config[REGION]['destination_data'] = path + '/data/' + REGION + '/input/destination_data/destination_employment_lehd.csv'   
+        config['destination_data'] = path + '/data/input/destination_data/destination_employment_lehd.csv'   
             # GTFS
-            config[REGION]['gtfs_static'] = path + '/data/' + REGION + '/input/gtfs/gtfs_static'
-            config[REGION]['gtfs_rt'] = path + '/data/' + REGION + '/input/gtfs/gtfs_realtimes'   
+        config['gtfs_static'] = path + '/data/input/gtfs/gtfs_static'
+        config['gtfs_rt'] = path + '/data/input/gtfs/gtfs_realtimes'   
             # Output
-            config[REGION]['accessibility'] = path + '/data/' + REGION + '/input/output/accessibility_calc_output'
-            config[REGION]['equity'] = path + '/data/' + REGION + '/input/output/equity_calc_output'
-            config[REGION]['fare'] = path + '/data/' + REGION + '/input/output/fare_calc_output'
-            config[REGION]['reliability'] = path + '/data/' + REGION + '/input/output/fare_calc_output'
-            config[REGION]['service'] = path + '/data/' + REGION + '/input/output/servicehours_calc_output'   
+        config['accessibility'] = path + '/data/input/output/accessibility_calc_output'
+        config['equity'] = path + '/data/input/output/equity_calc_output'
+        config['fare'] = path + '/data/input/output/fare_calc_output'
+        config['reliability'] = path + '/data/input/output/fare_calc_output'
+        config['service'] = path + '/data/input/output/servicehours_calc_output'   
             # OTP
-            config[REGION]['graphs'] = path + '/data/' + REGION + '/otp/graphs'  
-            config[REGION]['itinerary'] = path + '/data/' + REGION + '/otp/itinerary' 
+        config['graphs'] = path + '/data/otp/graphs'  
+        config['itinerary'] = path + '/data/otp/itinerary' 
 
           
 
@@ -176,7 +173,7 @@ class FileConfig():
         config = self.config_parser       
         if region in config.sections():
             # template namedtuple
-            Region = namedtuple('Region', ['name',
+            Region = namedtuple(['name',
                                            'block_group_polygons',
                                            'block_group_points',
                                            'country_boundaries',
@@ -194,24 +191,22 @@ class FileConfig():
                                            'otp',
                                            'points'])
             try:    
-                return Region(
-                            region,
-                            config[region]['block_group_polygons'],
-                            config[region]['block_group_points'],
-                            config[region]['country_boundaries'],
-                            config[region]['region_boundary'],
-                            config[region]['osm'],
-                            config[region]['population_data'],
-                            config[region]['destination_data'],
-                            config[region]['gtfs_static'],
-                            config[region]['gtfs_rt'],
-                            config[region]['accessibility'],
-                            config[region]['equity'],
-                            config[region]['fare'],
-                            config[region]['reliability'],
-                            config[region]['reliability'],
-                            config[region]['service'],
-                            pd.read_csv(config[region]['points'])
+                return Region(config['block_group_polygons'],
+                            config['block_group_points'],
+                            config['country_boundaries'],
+                            config['region_boundary'],
+                            config['osm'],
+                            config['population_data'],
+                            config['destination_data'],
+                            config['gtfs_static'],
+                            config['gtfs_rt'],
+                            config['accessibility'],
+                            config['equity'],
+                            config['fare'],
+                            config['reliability'],
+                            config['reliability'],
+                            config['service'],
+                            pd.read_csv(config['points'])
                             )
             except Exception as e:
                 # if dashboard is installed on Linux/AWS we can check syslog file
@@ -221,7 +216,8 @@ class FileConfig():
             #journalctl -f -u syslog verificar dinamicamente 
             # cd /var/log > tail syslog
             print('Region not found')
-            
+ 
+    ## Propose delete
     def get_regions(self):
         """Access sections inside configuration file and returns a list containing
         each region header.
