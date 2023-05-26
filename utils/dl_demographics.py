@@ -181,8 +181,8 @@ def dots(region):
     demo_dot_counts = [100,100,100,100,100,100,100,100,50,50,50,50,50,50]
 
     # paths
-    block_group_path = "data/" + region + "/input/boundary_data/block_group_poly.geojson"
-    demo_data_path = "data/" + region + "/input/population_data/"
+    block_group_path = "data/input/boundary_data/block_group_poly.geojson"
+    demo_data_path = "data/input/population_data/"
     demo_file_name = "demographics.csv"
     dots_file_name = "demo_dots.csv"
 

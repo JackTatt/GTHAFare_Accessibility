@@ -41,16 +41,16 @@ minute = ("{:02d}".format(int(args.minute)))
 
 config = configparser.ConfigParser()
 config.read('../config.cfg')
-pts_path = config[region]['block_group_points'] 
-graph_path = config[region]['graphs'] 
+pts_path = config['block_group_points'] 
+graph_path = config['graphs'] 
 
-outpath = config[region]['itinerary']
+outpath = config['itinerary']
 
 def run_rabbit_run(num, i, path):
     
     call(["/Users/Rick/jython2.7.2/bin/jython", "-Dpython.path=otp-1.4.0-shaded.jar", 'otp_travel-times.py', 
           '--date', date, '--hour', str(hr), '--minute', minute, '--mode', mode, '--o_path', i, '--d_path', pts_path, '--num', num
-          , '-x', path, '--region', region, '--graph', graph_path])
+          , '-x', path, '--graph', graph_path])
 
 if __name__ == '__main__':
     multiprocessing.set_start_method('spawn', force=True)

@@ -6,7 +6,7 @@ Created on Mon Jul 13 21:19:01 2020
 @author: Rick
 
 
-This function sets up the parameters/files/directories to be used in the otp jython call. 
+This function sets up the parameters/files/directories to be used in the otp python call. 
 It will also call the command to run otp.
 
 This script can either be run directly from the command line, or be used in conjuction with otp_main.py.
@@ -32,7 +32,6 @@ import sys
 #command line arguments
 parser = argparse.ArgumentParser(description='Process region')
 parser.add_argument("-d", '--date', default = datetime.datetime.now().strftime('%Y-%m-%d'), help="input date for otp in YYYY-MM-DD")
-parser.add_argument("-r", '--region',  help="region")
 parser.add_argument("-p", '--threads', default = 4, help="number of threads")
 parser.add_argument("-z", '--period', help="time period, AM, EVE , MID")
 
@@ -41,7 +40,6 @@ parser.add_argument("-z", '--period', help="time period, AM, EVE , MID")
 args = parser.parse_args()
 date = args.date
 mode = 'TRANSIT'
-region = args.region
 threads = int(args.threads)
 period = args.period
 
@@ -56,16 +54,16 @@ else:
     config.read('../config.cfg')
 
 #reading paths from the config
-pts_path = config[region]['block_group_points'] 
-#pts_path = config[region]['tract_points'] 
-graph_path = config[region]['graphs'] 
+pts_path = config['block_group_points'] 
+#pts_path = config['tract_points'] 
+graph_path = config['graphs'] 
 otp_path = config['General']['otp'] 
-outpath = config[region]['itinerary']
+outpath = config['itinerary']
 
 
 #reads the list of premium routes to ban
 results = []
-with open(config[region]['gtfs_static'] + '/premium_routes.csv') as f:
+with open(config['gtfs_static'] + '/premium_routes.csv') as f:
     for row in csv.reader(f):
         results.append(row[0])
 banned_routes = ','.join(results)
@@ -83,7 +81,7 @@ def run_rabbit_run(num, o_path, path, hr, minute, o_date, suffix):
           config['General']['otp'] + '/otp_travel-times.py', 
           '--date', date, '--hour', str(hr), '--minute', minute, '--mode', mode, '--o_path', o_path, '--d_path', 
           pts_path, '--num', num
-          , '--out', path, '--region', region, '--graph', graph_path, '--o_date', o_date, '--lowcost', banned_routes, 
+          , '--out', path, '--graph', graph_path, '--o_date', o_date, '--lowcost', banned_routes, 
           '--suffix', suffix])
 
 # temporarily changes working directory
@@ -146,18 +144,6 @@ if __name__ == '__main__':
     elif period == 'EDT_MP':
         o_date = wk_date
         hr_lst = [11,12]
-    elif period == 'CST_MP':
-        o_date = wk_date
-        hr_lst = [13,14]
-    elif period == 'CDT_MP':
-        o_date = wk_date
-        hr_lst = [12,13]
-    elif period == 'PST_MP':
-        o_date = wk_date
-        hr_lst = [15,16]
-    elif period == 'PDT_MP':
-        o_date = wk_date
-        hr_lst = [14,15]
 
     elif period == 'EST_PM':
         o_date = pm_date
@@ -165,18 +151,6 @@ if __name__ == '__main__':
     elif period == 'EDT_PM':
         o_date = pm_date
         hr_lst = [2,3]
-    elif period == 'CST_PM':
-        o_date = pm_date
-        hr_lst = [4,5]
-    elif period == 'CDT_PM':
-        o_date = pm_date
-        hr_lst = [3,4]
-    elif period == 'PST_PM':
-        o_date = pm_date
-        hr_lst = [6,7]
-    elif period == 'PDT_PM':
-        o_date = pm_date
-        hr_lst = [5,6]
 
     elif period == 'EST_WE':
         o_date = we_date

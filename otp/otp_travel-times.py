@@ -24,7 +24,6 @@ parser.add_option("-o", '--o_path',  help="path for origin points")
 parser.add_option("-p", '--d_path',  help="path for dest points")
 parser.add_option("-n", '--num',  help="iteration num")
 parser.add_option("-x", '--out',  help="out path")
-parser.add_option("-r", '--region',  help="region")
 parser.add_option("-g", '--graph',  help="graph")
 parser.add_option("-a", '--o_date',  help="date of trip")
 parser.add_option("-b", '--lowcost', help="routes to ban for lowcost network")
@@ -42,7 +41,6 @@ num = str(options.num)
 outpath = options.out
 print (date, hr, mode)
 minute = int(options.minute)
-region = options.region
 graph_path = options.graph
 o_date = options.date
 lowcost = options.lowcost
@@ -124,7 +122,6 @@ config.set(run_no, 'max_time', str(max_time))
 config.set(run_no, 'initial_wait', str(initial_wait))
 config.set(run_no, 'max_walk', str(walk_dist))
 config.set(run_no, 'date', str(o_date))
-config.set(run_no, 'region', region)
 config.set(run_no, 'hour', str(hr))
 config.set(run_no, 'minute', str(minute))
 config.set(run_no, 'o_date', str(o_date))

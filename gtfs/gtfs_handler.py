@@ -1,3 +1,5 @@
+#### PROPOSE DELETION ####
+
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -5,8 +7,7 @@ Created on Mon Jun  8 16:53:41 2020
 
 @author: Rick
 
-Updated 2023/05/19 for GT
-By: Jack Tattersall
+Not required for GTHA
 """
 
 import requests
@@ -234,21 +235,6 @@ class get:
                         i = i - 1
             except:
                 None
-                
-        if region == 'New York':
-            
-            dt_fetched = date_fetched
-            name = 'NICE'
-            loc = 'Nassau County'
-            nice_url =  'https://www.nicebus.com/NICE/media/nicebus-gtfs/NICE_GTFS.zip'
-            print(name)
-                        
-            api_url = nice_url 
-            dir = config[region]['gtfs_static'] + "/feeds_"+ input_date + "/" +  'nassau-inter-county-express_268' + ".zip"
-            urllib.request.urlretrieve(nice_url, dir)
-            dir_name = config[region]['gtfs_static'] + "/feeds_" + input_date + "/" + 'nassau-inter-county-express_268'
-
-
 
             try:          
                 gtfs_file = GTFS.load_zip(dir_name)
@@ -281,9 +267,9 @@ class get:
             output_feed_info.append(list([name, op_url, loc, '', feed_id, dt_fetched, dt_st, dt_end, api_url]))
     
         feed_info = pd.DataFrame(output_feed_info, columns = ['operator_name' , 'operator_url', 'operator_region', 'transit_feeds_id', 'transit_land_id', 'date_fetched', 'earliest_calendar_date', 'latest_calendar_date', 'transitland_url']) 
-        feed_info.to_csv(config[region]['gtfs_static'] + "/feeds_" + input_date + "/" + region + "_feed_info_" + input_date + ".csv", index = False)
+        feed_info.to_csv(config['gtfs_static'] + "/feeds_" + input_date + "/_feed_info_" + input_date + ".csv", index = False)
 
-    def transit_feeds(region, input_date, xmin, xmax, ymin, ymax):
+    def transit_feeds(input_date, xmin, xmax, ymin, ymax):
         banned = pd.read_csv(config['General']['gen'] + '/banned_agencies.csv')
 
         key = config['API']['key']
@@ -356,7 +342,7 @@ class get:
                         if attempt == 0:
                             
                             api_url = gtfs_url + agencies['id'] + '/' + dt_fetched + '/download'
-                            dir = config[region]['gtfs_static'] + "/feeds_"+ input_date + "/" + filename + ".zip"
+                            dir = config['gtfs_static'] + "/feeds_"+ input_date + "/" + filename + ".zip"
                             r = requests.get(api_url)
                             with open(dir, 'wb') as outfile:
                                 outfile.write(r.content)
@@ -364,7 +350,7 @@ class get:
                         elif attempt == 1:
                             bkwd_dt = str((datetime.strptime(dt_fetched, '%Y%m%d') + timedelta(days=1)).date().strftime('%Y%m%d'))   
                             api_url = gtfs_url + agencies['id'] + '/' + bkwd_dt+ '/download'
-                            dir = config[region]['gtfs_static'] + "/feeds_" + input_date + "/" + filename + ".zip"
+                            dir = config['gtfs_static'] + "/feeds_" + input_date + "/" + filename + ".zip"
                             r = requests.get(api_url)
                             with open(dir, 'wb') as outfile:
                                 outfile.write(r.content)
@@ -374,7 +360,7 @@ class get:
                         elif attempt == 2:
                             fwd_dt = str((datetime.strptime(dt_fetched, '%Y%m%d') - timedelta(days=1)).date().strftime('%Y%m%d'))   
                             api_url = gtfs_url + agencies['id'] + '/' + fwd_dt + '/download'
-                            dir = config[region]['gtfs_static'] + "/feeds_" + input_date + "/" + filename + ".zip"
+                            dir = config['gtfs_static'] + "/feeds_" + input_date + "/" + filename + ".zip"
                             r = requests.get(api_url)
                             with open(dir, 'wb') as outfile:
                                 outfile.write(r.content)
@@ -459,23 +445,6 @@ class get:
                 
                 feed_info_lst.append(list([name, op_url, loc, agencies['id'], dt_str, dt_st, dt_end, api_url]))
         
-        if region == 'District of Columbia':
-            ts = agencies['latest']['ts']
-            dt_str = str(datetime.utcfromtimestamp(ts).strftime('%Y-%m-%d'))
-            name = 'Virginia Rail Express'
-            loc = 'Virginia'
-            dt_fetched = str(datetime.utcfromtimestamp(ts).strftime('%Y%m%d'))
-            vre_url =  'https://transitfeeds.com/p/virginia-railway-express/250/latest/download'
-            print(name)
-                        
-            api_url = vre_url 
-            dir = config[region]['gtfs_static'] + "/feeds_"+ input_date + "/" + 'virginia-railway-express_250' + ".zip"
-            r = requests.get(api_url)
-            with open(dir, 'wb') as outfile:
-                outfile.write(r.content)
-            dir_name = config[region]['gtfs_static'] + "/feeds_" + input_date + "/" + 'virginia-railway-express_250'
-
-
 
             try:          
                 gtfs_file = GTFS.load_zip(dir)
@@ -506,23 +475,7 @@ class get:
 
             feed_info_lst.append(list([name, op_url, loc, feed_id, dt_str, dt_st, dt_end, api_url]))
             
-        if region == 'New York':
-            
-            dt_fetched = str(datetime.utcfromtimestamp(ts).strftime('%Y%m%d'))
-            name = 'NICE'
-            loc = 'Nassau County'
-            dt_fetched = str(datetime.utcfromtimestamp(ts).strftime('%Y%m%d'))
-            nice_url =  'https://www.nicebus.com/NICE/media/nicebus-gtfs/NICE_GTFS.zip'
-            print(name)
-                        
-            api_url = nice_url 
-            dir = config[region]['gtfs_static'] + "/feeds_"+ input_date + "/" + 'nassau-inter-county-express_268' + ".zip"
-            r = requests.get(api_url)
-            with open(dir, 'wb') as outfile:
-                outfile.write(r.content)
-            dir_name = config[region]['gtfs_static'] + "/feeds_" + input_date + "/" + 'nassau-inter-county-express_268' 
-
-
+  
             try:          
                 gtfs_file = GTFS.load_zip(dir_name)
                 dt_st = str(gtfs_file.summary().first_date.date())
