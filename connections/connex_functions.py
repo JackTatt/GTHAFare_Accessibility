@@ -29,10 +29,12 @@ Collect list of all stops corresponding to each interchange
 '''
 
 def minimumCT(stop1, stop2):
+    minCT
     # Determine walking distance between stops/stations
     # R5py using 1m/s walking speed on OpenStreetMap
     
 def maximumCT(stop1,stop2):
+    maxCT
     # Define based on a fixed value
     # Define based on multiple of headway. 
     
