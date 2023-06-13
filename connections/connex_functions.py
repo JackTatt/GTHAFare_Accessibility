@@ -77,15 +77,21 @@ Search for main terminals/stations with common names
 Check list of interchange hubs made up of stations/terminals with trigger words:
     Station, Terminal,
     
-Note, Village Station Rd is a street in Toronto with corresponding bus stopm 
+Note, Village Station Rd is a street in Toronto with corresponding bus stop 
 '''
 inter = pd.empty()
 inter = stops.loc[stops['stop_name'].str.contains("Station", case=False)]
 inter = stops.loc[stops['stop_name'].str.contains("Terminal", case=False)]
+inter = stops.loc[stops['stop_name'].str.contains("Bus Terminal", case=False)]
 interchange = inter[['agency_id','stop_id','stop_name','stop_lat', 'stop_lon']]
 interchange.rename(columns={'agency_id':'to_agency','stop_name':'to_stop_name',
                              'stop_lat': 'to_stop_lat', 'stop_lon':'to_stop_lon'},
                     inplace=True)
+fakehub = ['Station Rd', 'Station Ave', 'Station St', 
+           'Terminal Rd', 'Terminal Ave', 'Terminal St']
+for i in len(fakehub):
+    inter = inter[inter.stop_name.contains(fakehub) == False]   
+
 '''
 THOUGHTS:
     Including high-frequency services may be problematic especially in reverse
@@ -110,51 +116,57 @@ Hub list gives interchnages that are not published as such (Newcastle Street at 
                                                             Long Branch GO / Long Branch Loop)
 
 '''
-hub_list = pd.read_csv('GTHA_ConnectionHubs.csv')   # Or is anumpy array better storage for this??
+hub_list = pd.read_csv('GTHA_ConnectionHubs.csv')
+# check hub list first
+for i in range(len(hub_list)):
+    pt = interchange.loc[interchange['stop_name'] == hub_list.hub[i]]
+    addition = stops.loc[stops['stop_name'].str.contains(hub_list.althub1)]
+    if hub_list.althub2[i].notna() == True:
+        addition.concat(stops.iloc[i].str.contains(hub_list.althub2[i])) 
+        ## Check pd.concat vs pd.append
+    
+        
 
 for idx,hub in enumerate(interchange['stop_name']):
     key = find(' - ')
     if key != -1:
         if find('Station - ') != -1:
             Hub = hub[:key]
-            # check hub list
+            add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]
             
         else:
             Hub = hub[key:]
-            # check hub list
-            
+            add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]
     cross = find(' at ')
     link = find(' and ')
     linx = find(' & ')
     if cross != -1:
         x1 = hub[:cross]
         x2 = hub[cross:]
-        # check hub list
-        
+        Add = stops.loc[stops['stop_name'].str.contains(x1, case=False) and 
+                        stops['stop_name'].str.contains(x2, case=False)]
     elif link != -1:
         x1 = hub[:link]
         x2 = hub[link:]
-        # check hub list
-        
+        Add = stops.loc[stops['stop_name'].str.contains(x1, case=False) and 
+                        stops['stop_name'].str.contains(x2, case=False)]
     elif linx != -1:
         x1 = hub[:linx]
         x2 = hub[linx:]
-        # check hub list
-    
-    # Check for other terms calling station / Terminal 
-    # Such as Kipling Station / Kipling GO / Kipling Terminal / Kipling Bus Terminal
+        Add = stops.loc[stops['stop_name'].str.contains(x1, case=False) and 
+                        stops['stop_name'].str.contains(x2, case=False)]
     else:
-        # check hub list
         pass
 
 
+   #Code append/concat. Check pd reference. Review what you want final dataframe to look like.
     interchanges = pd.concat(stops.iloc[idx].str.contains(Hub)['stop_name','stop_lat','stop_lon'],
                              axis=1)
    # df = pd.DataFrame(np.repeat(df.values,3,axis = 0))
-# Alternate iteration structure:    #for x in range(len(string_list))
     
 
 # Inputs
+# Review syntax for importing transportnetwork from OSM for R5Py
 gtha = r5py.TransportNetwork('GTHA_OSM20230525.osm.pbf',, 
                              settings
                              )
@@ -171,3 +183,6 @@ def maximumCT(stop1,stop2):
     # Define based on multiple of headway. 
     
 # Perform analysis
+
+# Output results
+pd.connex.to_csv('GTHA_connections.csv')
