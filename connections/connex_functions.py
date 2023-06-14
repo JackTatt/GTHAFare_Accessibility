@@ -122,21 +122,29 @@ for i in range(len(hub_list)):
     pt = interchange.loc[interchange['stop_name'] == hub_list.hub[i]]
     addition = stops.loc[stops['stop_name'].str.contains(hub_list.althub1)]
     if hub_list.althub2[i].notna() == True:
-        addition.concat(stops.iloc[i].str.contains(hub_list.althub2[i])) 
-        ## Check pd.concat vs pd.append
-    
-        
-
+        Addition = stops.iloc[i].str.contains(hub_list.althub2[i])
+        Addition = pd.concat(addition,Addition, axis = 0)
+        if hub_list.althub3[i].notna() == True:
+            ADDITION = stops.iloc[i].str.contains(hub_list.althub3[i])
+            addhub = pd.concat(ADDITION,Addition, axis = 0)
+        else:
+            addhub = Addition.copy()
+    else:
+        addhub = addition.copy()
+  
+connex = pd.empty()
 for idx,hub in enumerate(interchange['stop_name']):
     key = find(' - ')
     if key != -1:
         if find('Station - ') != -1:
             Hub = hub[:key]
-            add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]
+            Add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]['stop_name','stop_lat','stop_lon']
+            Add['stop_name_to'] = hub
             
         else:
             Hub = hub[key:]
-            add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]
+            Add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]['stop_name','stop_lat','stop_lon']
+            Add['stop_name_to'] = hub
     cross = find(' at ')
     link = find(' and ')
     linx = find(' & ')
@@ -144,26 +152,34 @@ for idx,hub in enumerate(interchange['stop_name']):
         x1 = hub[:cross]
         x2 = hub[cross:]
         Add = stops.loc[stops['stop_name'].str.contains(x1, case=False) and 
-                        stops['stop_name'].str.contains(x2, case=False)]
+                        stops['stop_name'].str.contains(x2, case=False)]['stop_name','stop_lat','stop_lon']
+        add['stop_name_to'] = hub
     elif link != -1:
         x1 = hub[:link]
         x2 = hub[link:]
         Add = stops.loc[stops['stop_name'].str.contains(x1, case=False) and 
-                        stops['stop_name'].str.contains(x2, case=False)]
+                        stops['stop_name'].str.contains(x2, case=False)]['stop_name','stop_lat','stop_lon']
+        Add['stop_name_to'] = hub
     elif linx != -1:
         x1 = hub[:linx]
         x2 = hub[linx:]
         Add = stops.loc[stops['stop_name'].str.contains(x1, case=False) and 
-                        stops['stop_name'].str.contains(x2, case=False)]
+                        stops['stop_name'].str.contains(x2, case=False)]['stop_name','stop_lat','stop_lon']
+        Add['stop_name_to'] = hub
     else:
         pass
 
-
-   #Code append/concat. Check pd reference. Review what you want final dataframe to look like.
-    interchanges = pd.concat(stops.iloc[idx].str.contains(Hub)['stop_name','stop_lat','stop_lon'],
-                             axis=1)
-   # df = pd.DataFrame(np.repeat(df.values,3,axis = 0))
+    # Code added 2023/06/13. Review functionality satisfies objectives.
+    rep = len(interchange['stop_name'] == hub)
+    interchange.loc[interchange.index.repeat(rep)].reset_index(drop=True)
+    connex = pd.concat(connex,Add)
     
+interchanges = pd.merge(interchange,connex,left_on = 'stop_name',right_on = 'stop_name_to',
+                        suffixes=('_to', '_from'))
+
+# Review arrangement of final output interchanges dataframe and simplify as beneficial: remove unneeded rows, check GPS coord format for R5Py
+
+######## HERE :) ########  
 
 # Inputs
 # Review syntax for importing transportnetwork from OSM for R5Py
