@@ -83,7 +83,7 @@ inter = pd.empty()
 inter = stops.loc[stops['stop_name'].str.contains("Station", case=False)]
 inter = stops.loc[stops['stop_name'].str.contains("Terminal", case=False)]
 inter = stops.loc[stops['stop_name'].str.contains("Bus Terminal", case=False)]
-interchange = inter[['agency_id','stop_id','stop_name','stop_lat', 'stop_lon']]
+interchange = inter[['stop_id','stop_name','stop_lat', 'stop_lon']]
 interchange.rename(columns={'agency_id':'to_agency','stop_name':'to_stop_name',
                              'stop_lat': 'to_stop_lat', 'stop_lon':'to_stop_lon'},
                     inplace=True)
@@ -93,29 +93,11 @@ for i in len(fakehub):
     inter = inter[inter.stop_name.contains(fakehub) == False]   
 
 '''
-THOUGHTS:
-    Including high-frequency services may be problematic especially in reverse
-    Metric will punish connections from hgih-frequency to low-frequency services 
-        because most services will not meet a connection taker (low-frequncy service)
-        
-    Imagine:
-        Route A calls at 00, 05, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
-        Route 1 calls at 03, 33             e.g. MinCT = 2, MaxCT = 2*H = 10
-        Then 05, 10, 15, 20, 35, 40, 45, 50 arrivals would report 0 connection
-        But a connection would never have been possible in the first place.
-    So, then a denominator is required that reports what connections can exist in the first place 
-        i.e. departures per hour
-        thus, 12 tph connection to 2 tph only gives 2 connections possible in the first place
-        At this: 2/2 = 100% CONNECTION PUNCTUALITY
-'''
-
-'''
 Collect stops corresponding to the same interchange to create to/from selection
-
 Hub list gives interchnages that are not published as such (Newcastle Street at Royal York Rd / Mimico GO;
                                                             Long Branch GO / Long Branch Loop)
-
 '''
+
 hub_list = pd.read_csv('GTHA_ConnectionHubs.csv')
 # check hub list first
 for i in range(len(hub_list)):
@@ -133,10 +115,10 @@ for i in range(len(hub_list)):
         addhub = addition.copy()
   
 connex = pd.empty()
-for idx,hub in enumerate(interchange['stop_name']):
-    key = find(' - ')
+for idx,hub in enumerate(interchange['to_stop_name']):
+    key = interchange['to_stop_name'].find(' - ')
     if key != -1:
-        if find('Station - ') != -1:
+        if interchange['to_stop_name'].find('Station - ') != -1:
             Hub = hub[:key]
             Add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]['stop_name','stop_lat','stop_lon']
             Add['stop_name_to'] = hub
@@ -145,15 +127,15 @@ for idx,hub in enumerate(interchange['stop_name']):
             Hub = hub[key:]
             Add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]['stop_name','stop_lat','stop_lon']
             Add['stop_name_to'] = hub
-    cross = find(' at ')
-    link = find(' and ')
-    linx = find(' & ')
+    cross = interchange['to_stop_name'].find(' at ')
+    link = interchange['to_stop_name'].find(' and ')
+    linx = interchange['to_stop_name'].find(' & ')
     if cross != -1:
         x1 = hub[:cross]
         x2 = hub[cross:]
         Add = stops.loc[stops['stop_name'].str.contains(x1, case=False) and 
                         stops['stop_name'].str.contains(x2, case=False)]['stop_name','stop_lat','stop_lon']
-        add['stop_name_to'] = hub
+        Add['stop_name_to'] = hub
     elif link != -1:
         x1 = hub[:link]
         x2 = hub[link:]
@@ -172,28 +154,45 @@ for idx,hub in enumerate(interchange['stop_name']):
     # Code added 2023/06/13. Review functionality satisfies objectives.
     rep = len(interchange['stop_name'] == hub)
     interchange.loc[interchange.index.repeat(rep)].reset_index(drop=True)
-    connex = pd.concat(connex,Add)
-    
-interchanges = pd.merge(interchange,connex,left_on = 'stop_name',right_on = 'stop_name_to',
+    interchanges = pd.merge(interchange,Add,left_on = 'to_stop_name',right_on = 'stop_name_to',
                         suffixes=('_to', '_from'))
-
+    
+interchanges = pd.concat(interchanges,Add)
 # Review arrangement of final output interchanges dataframe and simplify as beneficial: remove unneeded rows, check GPS coord format for R5Py
 
-######## HERE :) ########  
+# Check
+print(interchanges.head())
 
-# Inputs
-# Review syntax for importing transportnetwork from OSM for R5Py
-gtha = r5py.TransportNetwork('GTHA_OSM20230525.osm.pbf',, 
-                             settings
-                             )
+# Setup Transport Network for R5Py
+gtha = r5py.TransportNetwork('GTHA_OSM20230525.osm.pbf')
 
 
-def minimumCT(stop1, stop2):
-    minCT
+'''
+THOUGHTS:
+    Including high-frequency services may be problematic especially in reverse
+    Metric will punish connections from hgih-frequency to low-frequency services 
+        because most services will not meet a connection taker (low-frequncy service)
+        
+    Imagine:
+        Route A calls at 00, 05, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
+        Route 1 calls at 03, 33             e.g. MinCT = 2, MaxCT = 2*H = 10
+        Then 05, 10, 15, 20, 35, 40, 45, 50 arrivals would report 0 connection
+        But a connection would never have been possible in the first place.
+    So, then a denominator is required that reports what connections can exist in the first place 
+        i.e. departures per hour
+        thus, 12 tph connection to 2 tph only gives 2 connections possible in the first place
+        At this: 2/2 = 100% CONNECTION PUNCTUALITY
+'''
+
+# From R5Py trip matrix
     # Determine walking distance between stops/stations
     # R5py using 1m/s walking speed on OpenStreetMap
+r5py.TravelTimeMatrixComputer(gtha,interchanges[], interchanges[])    
+minCT = r5py.compute_travel_times()
+
+interchanges['Min_Connection'] = minCT.travel_time
     
-def maximumCT(stop1,stop2):
+# From GTFS
     maxCT
     # Define based on a fixed value
     # Define based on multiple of headway. 
