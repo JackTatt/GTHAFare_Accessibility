@@ -8,11 +8,10 @@ CONNECTION PUNCTUALITY CALCULATOR
 """
 
 # Required  modules to support calculations
-import geopandas as geo
+import geopandas as gpd
 import pandas as pd
 import r5py
 import numpy as np
-import os
 import datetime as dt
 from zipfile import ZipFile
 
@@ -33,7 +32,7 @@ scope = ['TTC','GO','YRT','DRT','HSR','BT','MilT','OakT','BurT','UPExpress']
 operators = pd.empty()
 agencies = pd.empty()
 routes = pd.empty()
-stops = pd.empty()
+stop = pd.empty()
 trips = pd.empty()
 times = pd.empty()
 dates = pd.empty()
@@ -63,13 +62,15 @@ for Agency in scope:
     # Append to single region-wide GTFS dataframes
     agencies = pd.append(agency)
     routes = pd.append(Routes)
-    stops = pd.append(Stops)
+    stop = pd.append(Stops)
     trips = pd.append(Trips)
     times = pd.append(Times)
     dates = pd.append(Dates)
     shapes = pd.append(Shapes)
     calendar = pd.append(Calendar)
 
+#convert to geodataframe:
+stops = gpd.GeoDataFrame(stop, geometry=gpd.points_from_xy(stop.stop_lon,stop.stop_lat), crs = "EPSG:2958")
 
 # Interchange Identification
 '''
@@ -114,18 +115,17 @@ for i in range(len(hub_list)):
     else:
         addhub = addition.copy()
   
-connex = pd.empty()
 for idx,hub in enumerate(interchange['to_stop_name']):
     key = interchange['to_stop_name'].find(' - ')
     if key != -1:
         if interchange['to_stop_name'].find('Station - ') != -1:
             Hub = hub[:key]
-            Add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]['stop_name','stop_lat','stop_lon']
+            Add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]['stop_name','geometry']
             Add['stop_name_to'] = hub
             
         else:
             Hub = hub[key:]
-            Add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]['stop_name','stop_lat','stop_lon']
+            Add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]['stop_name','geometry']
             Add['stop_name_to'] = hub
     cross = interchange['to_stop_name'].find(' at ')
     link = interchange['to_stop_name'].find(' and ')
@@ -134,19 +134,19 @@ for idx,hub in enumerate(interchange['to_stop_name']):
         x1 = hub[:cross]
         x2 = hub[cross:]
         Add = stops.loc[stops['stop_name'].str.contains(x1, case=False) and 
-                        stops['stop_name'].str.contains(x2, case=False)]['stop_name','stop_lat','stop_lon']
+                        stops['stop_name'].str.contains(x2, case=False)]['stop_name','geometry']
         Add['stop_name_to'] = hub
     elif link != -1:
         x1 = hub[:link]
         x2 = hub[link:]
         Add = stops.loc[stops['stop_name'].str.contains(x1, case=False) and 
-                        stops['stop_name'].str.contains(x2, case=False)]['stop_name','stop_lat','stop_lon']
+                        stops['stop_name'].str.contains(x2, case=False)]['stop_name','geometry']
         Add['stop_name_to'] = hub
     elif linx != -1:
         x1 = hub[:linx]
         x2 = hub[linx:]
         Add = stops.loc[stops['stop_name'].str.contains(x1, case=False) and 
-                        stops['stop_name'].str.contains(x2, case=False)]['stop_name','stop_lat','stop_lon']
+                        stops['stop_name'].str.contains(x2, case=False)]['stop_name','geometry']
         Add['stop_name_to'] = hub
     else:
         pass
@@ -162,6 +162,9 @@ interchanges = pd.concat(interchanges,Add)
 
 # Check
 print(interchanges.head())
+
+# Convert to GeoPandas
+connections = gpd.GeoDataFrame(interchanges, )
 
 # Setup Transport Network for R5Py
 gtha = r5py.TransportNetwork('GTHA_OSM20230525.osm.pbf')
@@ -184,20 +187,22 @@ THOUGHTS:
         At this: 2/2 = 100% CONNECTION PUNCTUALITY
 '''
 
-# From R5Py trip matrix
-    # Determine walking distance between stops/stations
-    # R5py using 1m/s walking speed on OpenStreetMap
-r5py.TravelTimeMatrixComputer(gtha,interchanges[], interchanges[])    
-minCT = r5py.compute_travel_times()
+# Minimum Connection Time (Walking Distance Between Stop Points)
+transfer = r5py.TravelTimeMatrixComputer(gtha,
+                                         origins=interchanges['geometry_from'], 
+                                         destinations=interchanges['geometry_to'],
+                                         transport_modes= r5py.LegMode.WALK)    
+minCT = transfer.compute_travel_times()
 
 interchanges['Min_Connection'] = minCT.travel_time
     
-# From GTFS
-    maxCT
+# Maximum Connection Time
     # Define based on a fixed value
     # Define based on multiple of headway. 
     
 # Perform analysis
 
 # Output results
-pd.connex.to_csv('GTHA_connections.csv')
+pd.interchanges.to_csv('GTHA_connections.csv')
+
+# Plot Results Cartographically
