@@ -1,17 +1,17 @@
 # -*- coding: utf-8 -*-
 """
-Created on Thu May 25 20:27:17 2023
+Station Identification Code
+Identifying and collection all interchanges in the GTHA GTFS files
+including subway stations and high frequency connecting services.
+
+Created on Fri Jun 15 21:40:58 2023
 
 @author: Jack Tattersall
-
-CONNECTION PUNCTUALITY CALCULATOR
 """
 
 # Required  modules to support calculations
 import geopandas as gpd
 import pandas as pd
-import r5py
-import numpy as np
 import datetime as dt
 from zipfile import ZipFile
 
@@ -76,7 +76,7 @@ stops = gpd.GeoDataFrame(stop, geometry=gpd.points_from_xy(stop.stop_lon,stop.st
 '''
 Search for main terminals/stations with common names
 Check list of interchange hubs made up of stations/terminals with trigger words:
-    Station, Terminal, Bus Terminal
+    Station, Terminal,
     
 Note, Village Station Rd is a street in Toronto with corresponding bus stop 
 '''
@@ -162,90 +162,3 @@ interchanges = pd.concat(interchanges,Add)
 
 # Check
 print(interchanges.head())
-
-# Convert to GeoPandas
-connections = gpd.GeoDataFrame(interchanges, )
-
-# Setup Transport Network for R5Py
-gtha = r5py.TransportNetwork('GTHA_OSM20230525.osm.pbf')
-
-
-'''
-THOUGHTS:
-    Including high-frequency services may be problematic especially in reverse
-    Metric will punish connections from hgih-frequency to low-frequency services 
-        because most services will not meet a connection taker (low-frequncy service)
-    Further,
-    The issue of Connection Punctuality is strongest for 
-        Low frequency -> Low frequency transfers
-        
-    Imagine:
-        Route A calls at 00, 05, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55
-        Route 1 calls at 03, 33             e.g. MinCT = 2, MaxCT = 2*H = 10
-        Then 15, 20,45, 50, 55 arrivals would report 0 connection
-        But a connection would never have been possible in the first place.
-    So, then a denominator is required that reports what connections can exist in the first place 
-        i.e. departures per hour
-        thus, 12 tph connection to 2 tph only gives 2 connections possible in the first place
-        At this: 2/2 = 100% CONNECTION PUNCTUALITY
-'''
-
-# Minimum Connection Time (Walking Distance Between Stop Points)
-transfer = r5py.TravelTimeMatrixComputer(gtha,
-                                         origins=interchanges['geometry_from'], 
-                                         destinations=interchanges['geometry_to'],
-                                         transport_modes= r5py.LegMode.WALK)    
-minCT = transfer.compute_travel_times()
-
-interchanges['Min_Connection'] = minCT.travel_time
-    
-# Maximum Connection Time
-    # Define based on a fixed value, beyond which a connection is not counted
-maxCT = 10      # Maximum connection time value for connection window
-    
-# Perform analysis
-'''
-Issues to address
-1.
-Stop Ids service multiple routes/lines that are not coincident
-So, to capture connections properly, must check against trips as well as times
-2.
-
-'''
-serv = pd.merge(times,trips,on='trip_id')
-services = serv['route_id','route_short_name','stop_id','arrival_time', 'departure_time', 'trip_id','agency_id']
-
-for i, giver, taker in enumerate(interchange['stop_id_from','stop_id_to']):
-    transfers = pd.empty
-    # Identify giver in times dataframe.
-    transfers.GiverArr = times.loc[services['stop_id'] == giver]['arrival_time']
-    transfers.TakerArr = times.loc[services['stop_id'] == taker]['arrival_time']
-    transfers.GiverDep = times.loc[services['stop_id'] == giver]['departure_time']
-    transfers.TakerDep = times.loc[services['stop_id'] == taker]['departure_time']
-    # Range for connecting service
-    transfers.minDepTaker = transfers.GiverArr + interchanges[i]['Min_Connection']
-    transfers.maxDepTaker = transfers.GiverArr + maxCT
-    transfers.minDepGiver = transfers.TakerArr + interchanges[i]['Min_Connection']
-    transfers.maxDepGiver = transfers.TakerArr + maxCT
-    transfers.minArrTaker = transfers.GiverDep - interchanges[i]['Min_Connection']
-    transfers.maxArrTaker = transfers.GiverDep - maxCT
-    transfers.minArrGiver = transfers.TakerDep - interchanges[i]['Min_Connection']
-    transfers.maxArrGiver = transfers.TakerDep - maxCT
-    # Separate by route id.
-    # Giver Route != Taker Route -- report in transfers dataframe
-    # Same route must not call at same stop multiple times within connection window
-    ## Identifying if connection met.
-    # Not going to work because departures may not be lined up perfectly.
-    transfers['GiverPerf'] = pd.between(,,inclusive = 'both')
-    transfers['GiverPerf'] = pd.between(,,inclusive = 'both')
-    
-     
-    
-    
-    
-                
-
-# Output results
-pd.interchanges.to_csv('GTHA_connections.csv')
-
-# Plot Results Cartographically
