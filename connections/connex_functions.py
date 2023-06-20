@@ -122,7 +122,6 @@ for idx,hub in enumerate(interchange['to_stop_name']):
             Hub = hub[:key]
             Add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]['stop_name','geometry']
             Add['stop_name_to'] = hub
-            
         else:
             Hub = hub[key:]
             Add = stops.loc[stops['stop_name'].str.contains(Hub, case=False)]['stop_name','geometry']
@@ -217,11 +216,24 @@ services = serv['route_id','route_short_name','stop_id','arrival_time', 'departu
 
 for i, giver, taker in enumerate(interchange['stop_id_from','stop_id_to']):
     transfers = pd.empty
+    arrcalls = services.loc[services['stop_id'] == giver]['route_id']
+    depcalls = services.loc[services['stop_id'] == taker]['route_id']
+    if len(arrcalls) > 1:
+        callers = services.loc[services['stop_id'] == giver]['route_id']
+        transfers.route = pd.concat(transfers,callers)
+    else:
+        transfers.route = services.loc[services['stop_id'] == giver]['route_id']
+    if len(depcalls) > 1:
+        callers = services.loc[services['stop_id'] == taker]['route_id']
+        transfers.route = pd.concat(transfers,callers)
+    else:
+        transfers.route = services.loc[services['stop_id'] == taker]['route_id']
+    
     # Identify giver in times dataframe.
-    transfers.GiverArr = times.loc[services['stop_id'] == giver]['arrival_time']
-    transfers.TakerArr = times.loc[services['stop_id'] == taker]['arrival_time']
-    transfers.GiverDep = times.loc[services['stop_id'] == giver]['departure_time']
-    transfers.TakerDep = times.loc[services['stop_id'] == taker]['departure_time']
+    transfers.GiverArr = services.loc[services['stop_id'] == giver]['arrival_time']
+    transfers.TakerArr = services.loc[services['stop_id'] == taker]['arrival_time']
+    transfers.GiverDep = services.loc[services['stop_id'] == giver]['departure_time']
+    transfers.TakerDep = services.loc[services['stop_id'] == taker]['departure_time']
     # Range for connecting service
     transfers.minDepTaker = transfers.GiverArr + interchanges[i]['Min_Connection']
     transfers.maxDepTaker = transfers.GiverArr + maxCT
@@ -238,12 +250,7 @@ for i, giver, taker in enumerate(interchange['stop_id_from','stop_id_to']):
     # Not going to work because departures may not be lined up perfectly.
     transfers['GiverPerf'] = pd.between(,,inclusive = 'both')
     transfers['GiverPerf'] = pd.between(,,inclusive = 'both')
-    
-     
-    
-    
-    
-                
+             
 
 # Output results
 pd.interchanges.to_csv('GTHA_connections.csv')
